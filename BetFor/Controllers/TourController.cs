@@ -14,36 +14,30 @@ public class TourController : ControllerBase
     }
 
     [HttpGet]
-    [Route("GetCurrentTour")]
-    public IActionResult GetTour()
+    [Route("GetTourInfo")]
+    public IActionResult GetTourInfo()
     {
-        return Ok(service.GetTour());
-    }
+        var result = service.GetTourInfo();
 
-    [HttpGet]
-    [Route("TryGetTourByDate")]
-    public IActionResult TryGetTourByDate(DateTime date)
-    {
-        var result = service.TryGetTourByDate(date);
-        return result != null ? Ok(result) : BadRequest("Tour not found");
+        if (result != null)
+        {
+            return Ok(result);
+        }
+
+        return BadRequest();
     }
 
     [HttpPost]
     [Route("TryBetForCurrentTour")]
     public IActionResult TryBetForCurrentTour(TourRequest request)
     {
-        string message;
-        var result = service.TryBetForCurrentTour(request, out message);
+        var result = service.TryBetForCurrentTour(request);
 
-        return result == true ? Ok(message) : BadRequest(message);
-    }
+        if (result.HasWinner)
+        {
+            return Ok(result.Message);
+        }
 
-    [HttpDelete]
-    [Route("TryDeleteTour")]
-    //berrins void mu olmalı yoksa if eklenip deleted başaşrılı gibi bir şey mi dönmeli?
-    public IActionResult TryDeleteTour(long id)
-    {
-        service.TryDeleteTour(id);
-        return Ok();
+        return BadRequest(result.Message);
     }
 }

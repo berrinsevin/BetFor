@@ -1,59 +1,44 @@
-using System;
 using BetFor.Entities;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
+using BetFor.Repositories;
 
-public class NumberService : BackgroundService
+namespace BetFor.Services
 {
-    private readonly Random random;
-    private int rangeNum;
-    private int startNum;
-    public int tourNum;
-    private readonly object lockObject = new object();
+    public class NumberService : BackgroundService
+    {
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public NumberService()
-    {
-        random = new Random();
-        rangeNum = GetRandomNumber(10, 50);
-        startNum = GetRandomNumber(1, 100);
-        GenerateTour();
-    }
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
+        public NumberService(IServiceScopeFactory serviceScopeFactory)
         {
-            lock (lockObject)
-            {
-                rangeNum = GetRandomNumber(10, 50);
-                startNum = GetRandomNumber(1, 100);
-                GenerateTour();
-            }
-
-            //await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
-            await Task.Delay(30000, stoppingToken);
+            _serviceScopeFactory = serviceScopeFactory;
         }
-    }
 
-    private void GenerateTour()
-    {
-        int endNum = startNum + rangeNum;
-        tourNum = GetRandomNumber(startNum, endNum);
-    }
-
-    public CurrentTour GetCurrentTour()
-    {
-        return new CurrentTour
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            TourNumber = tourNum,
-            FirstNumber = startNum,
-            SecondNumber = startNum + rangeNum,
-            TourTime = DateTime.Now
-        };
-    }
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    var tourRepository = scope.ServiceProvider.GetRequiredService<IBaseRepository<Tour>>();
+                    Random random = new Random();
+                    var startNumber = random.Next(1, 50);
+                    var endNumber = random.Next(100, 150);
+                    var tourNumber = random.Next(startNumber, endNumber);
 
-    private int GetRandomNumber(int minValue, int maxValue)
-    {
-        return random.Next(minValue, maxValue + 1);
+                    var tour = new Tour
+                    {
+                        IsWinner = false,
+                        StartNumber = startNumber,
+                        EndNumber = endNumber,
+                        TourNumber = tourNumber,
+                        TourStartTime = DateTime.Now.AddMinutes(5),
+                        TourEndTime = DateTime.Now.AddMinutes(10)
+                    };
+
+                    tourRepository.Add(tour);
+                }
+
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+            }
+        }
     }
 }
