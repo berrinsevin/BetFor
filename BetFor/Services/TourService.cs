@@ -8,67 +8,71 @@ namespace BetFor.Services
 {
     public class TourService : ITourService
     {
-        private readonly IBaseRepository<Tour> repository;
-        private readonly NumberService numberService;
-        public TourService(IBaseRepository<Tour> repository, NumberService numberService)
+        private readonly IBaseRepository<Tour> tourRepository;
+        private readonly IBaseRepository<Client> clientRepository;
+        public TourService(IBaseRepository<Tour> tourRepository, IBaseRepository<Client> clientRepository)
         {
-            this.repository = repository;
-            this.numberService = numberService;
+            this.tourRepository = tourRepository;
+            this.clientRepository = clientRepository;
         }
 
-        public CurrentTourDto GetTour()
+        public CurrentTourDto GetTourInfo()
         {
-            return numberService.GetCurrentTour().CurrentTourMapper();
+            var currentTour = tourRepository.Find(x => x.TourStartTime <= DateTime.Now && x.TourEndTime > DateTime.Now).FirstOrDefault();
+
+            if (currentTour != null)
+            {
+                return currentTour.ToCurrentTourDto();
+            }
+
+            return null;
         }
 
-        public CurrentTour GetTourWithId()
+        public TourResponse TryBetForCurrentTour(TourRequest request)
         {
-            return numberService.GetCurrentTour();
-        }
-
-        public TourDto TryGetTourByDate(DateTime date)
-        {
-            var tour = repository.Find(x => x.TourTime == date).FirstOrDefault();
-            return tour.TourMapper();
-        }
-
-        public bool TryBetForCurrentTour(TourRequest request, out string message)
-        {
-            //berrins Client aradığımı nasıl belirtebilirim
-            var user = repository.GetById(request.UserId);
+            var tourResponse = new TourResponse();
+            var user = clientRepository.GetById(request.UserId);
 
             if (user != null)
             {
-                var currentTour = GetTourWithId();
-                if (currentTour.TourNumber == request.UserId)
+                var currentTour = tourRepository.Find(x => x.TourStartTime <= DateTime.Now && x.TourEndTime > DateTime.Now).FirstOrDefault();
+
+                var isValid = ValidateInputNumber(request.BetNumber);
+
+                if (isValid && currentTour!.TourNumber == request.BetNumber)
                 {
-                    var winnedTour = new Tour
-                    {
-                        IsWinner = true,
-                        WinnerId = request.UserId,
-                        TourTime = DateTime.Now
-                    };
+                    currentTour.IsWinner = true;
+                    currentTour.WinnerId = request.UserId;
+                    tourRepository.Update(currentTour);
 
-                    repository.Add(winnedTour);
-
-                    message = "Congratulations! You win :)";
-                    return true;
+                    tourResponse.HasWinner = true;
+                    tourResponse.Message = "Congratulations! You win.";
+                    return tourResponse;
                 }
                 else
                 {
-                    message = "Please try again";
-                    return true;
+                    tourResponse.HasWinner = false;
+                    tourResponse.Message = "Please try again.";
+                    return tourResponse;
                 }
             }
 
-            message = "User is not found!";
-            return false;
+            tourResponse.HasWinner = false;
+            tourResponse.Message = "User not found";
+            return tourResponse;
+        }
+
+        private bool ValidateInputNumber(long number)
+        {
+            var currentTour = tourRepository.Find(x => x.TourStartTime <= DateTime.Now && x.TourEndTime > DateTime.Now).FirstOrDefault();
+
+            return number >= currentTour!.StartNumber && number <= currentTour.EndNumber;
         }
 
         public void TryDeleteTour(long id)
         {
-            var tour = repository.GetById(id);
-            repository.Delete(tour);
+            var tour = tourRepository.GetById(id);
+            tourRepository.Delete(tour);
         }
     }
 }

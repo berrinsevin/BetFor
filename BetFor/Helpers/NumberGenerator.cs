@@ -13,14 +13,14 @@ namespace BetFor.Helpers
                 CancellationTokenSource cancellationToken = new CancellationTokenSource();
                 Task<int> numberGeneratorTask = GenerateNumberAndSleepAsync(cancellationToken.Token, rangeStart, rangeEnd);
 
-                await Task.Delay(120000);
+                await Task.Delay(30000);
 
                 if (!numberGeneratorTask.IsCompleted)
                 {
                     cancellationToken.Cancel();
                 }
 
-                await Task.Delay(30000);
+                //await Task.Delay(30000);
 
                 return numberGeneratorTask.Result;
             }
@@ -34,7 +34,7 @@ namespace BetFor.Helpers
             {
                 int randomNumber = random.Next(rangeStart, rangeEnd);
 
-                await Task.Delay(120000, cancellationToken);
+                await Task.Delay(30000, cancellationToken);
 
                 return randomNumber;
             }

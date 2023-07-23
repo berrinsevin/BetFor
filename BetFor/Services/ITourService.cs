@@ -5,9 +5,8 @@ namespace BetFor.Services
 {
     public interface ITourService
     {
-        CurrentTourDto GetTour();
-        bool TryBetForCurrentTour(TourRequest request, out string message);
-        TourDto TryGetTourByDate(DateTime date);
+        CurrentTourDto GetTourInfo();
+        TourResponse TryBetForCurrentTour(TourRequest request);
         void TryDeleteTour(long id);
     }
 }
