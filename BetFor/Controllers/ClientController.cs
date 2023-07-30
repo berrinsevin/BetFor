@@ -1,46 +1,73 @@
-using BetFor.Dtos;
+using BetFor.Helpers;
 using BetFor.Services;
 using BetFor.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Cors;
 
+[EnableCors("MyPolicy")]
 [ApiController]
 [Route("api/[controller]")]
 public class ClientController : ControllerBase
 {
-    private readonly IClientService service;
-    public ClientController(IClientService service)
+    private readonly IClientService clientService;
+
+    public ClientController(IClientService clientService)
     {
-        this.service = service;
+        this.clientService = clientService;
+    }
+
+    [HttpPost]
+    [Route("GetClient")]
+    public async Task<IActionResult> GetClient(GetClientRequest request)
+    {
+        Guard.NotNull<GetClientRequest>(request);
+        return Ok(await clientService.GetClientAsync(request));
     }
 
     [HttpPost]
     [Route("CreateClient")]
-    //berrins if ile başarılı/başarısız sonuç döndürülsün mü
-    public void CreateClient(Client client)
+    public async Task<IActionResult> CreateClient(CreateClientRequest request)
     {
-        service.TryCreateClient(client);
+        Guard.NotNull<CreateClientRequest>(request);
+        return await clientService.TryCreateClientAsync(request) ? Ok() : BadRequest();
     }
 
     [HttpPost]
     [Route("UpdateClient")]
-    //berrins if ile başarılı/başarısız sonuç döndürülsün mü
-    public void UpdateClient(UpdateClientDto client)
+    public async Task<IActionResult> UpdateClient(UpdateClientRequest request)
     {
-        service.TryUpdateClient(client);
+        Guard.NotNull<UpdateClientRequest>(request);
+        return await clientService.TryUpdateClientAsync(request) ? Ok() : BadRequest();
     }
 
-    [HttpGet]
-    [Route("TryGetClientById")]
-    public IActionResult TryGetClientById(long id)
+    [HttpPost]
+    [Route("DeleteClient")]
+    public async Task<IActionResult> DeleteClient(DeleteClientRequest request)
     {
-        var client = service.TryGetClientById(id);
-        return client != null ? Ok(client) : BadRequest("Client not found");
+        Guard.NotNull<DeleteClientRequest>(request);
+        return await clientService.TryDeleteClientAsync(request) ? Ok() : BadRequest();
     }
 
-    [HttpDelete]
-    [Route("TryDeleteClient")]
-    public void TryDeleteClient(long id)
+    [HttpPost]
+    [Route("CreateBet")]
+    public async Task<IActionResult> CreateBet(CreateBetRequest request)
     {
-        service.TryDeleteClient(id);
+        Guard.NotNull<CreateBetRequest>(request);
+        var response = await clientService.CreateBetAsync(request);
+
+        if (response.IsCreated == true)
+        {
+            return Ok(response);
+        }
+
+        return BadRequest(response);
+    }
+
+    [HttpPost]
+    [Route("GetBetResultList")]
+    public async Task<IActionResult> GetBetResultList(GetBetResultRequest request)
+    {
+        Guard.NotNull<GetBetResultRequest>(request);
+        return Ok(await clientService.GetBetResultListAsync(request));
     }
 }

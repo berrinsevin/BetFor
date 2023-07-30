@@ -1,6 +1,7 @@
-namespace BetFor.Dtos
+namespace BetFor.Entities
 {
-    public class UpdateClientDto
+    [Serializable]
+    public class UpdateClientRequest
     {
         public long Id { get; set; }
         public string? FirstName { get; set; }

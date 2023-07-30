@@ -1,13 +1,14 @@
-using BetFor.Context;
 using BetFor.Services;
-using BetFor.Entities;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
+[EnableCors("MyPolicy")]
 [ApiController]
 [Route("api/[controller]")]
 public class TourController : ControllerBase
 {
     private readonly ITourService service;
+
     public TourController(ITourService service)
     {
         this.service = service;
@@ -15,9 +16,9 @@ public class TourController : ControllerBase
 
     [HttpGet]
     [Route("GetTourInfo")]
-    public IActionResult GetTourInfo()
+    public async Task<IActionResult> GetTourInfo()
     {
-        var result = service.GetTourInfo();
+        var result = await service.GetCurrentTourAsync();
 
         if (result != null)
         {
@@ -27,17 +28,17 @@ public class TourController : ControllerBase
         return BadRequest();
     }
 
-    [HttpPost]
-    [Route("TryBetForCurrentTour")]
-    public IActionResult TryBetForCurrentTour(TourRequest request)
-    {
-        var result = service.TryBetForCurrentTour(request);
+    // [HttpPost]
+    // [Route("TryBetForCurrentTour")]
+    // public IActionResult TryBetForCurrentTour(TourRequest request)
+    // {
+    //     var result = service.TryBetForCurrentTour(request);
 
-        if (result.HasWinner)
-        {
-            return Ok(result.Message);
-        }
+    //     if (result.HasWinner)
+    //     {
+    //         return Ok(result.Message);
+    //     }
 
-        return BadRequest(result.Message);
-    }
+    //     return BadRequest(result.Message);
+    // }
 }
