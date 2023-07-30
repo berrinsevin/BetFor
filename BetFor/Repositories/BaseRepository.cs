@@ -6,47 +6,85 @@ namespace BetFor.Repositories
 {
     public class BaseRepository<T> : IBaseRepository<T> where T : BetForBase
     {
-        private readonly BetForContext _dbContext;
-        private DbSet<T> _dbSet;
+        private readonly BetForContext dbContext;
+        private DbSet<T> dbSet;
 
         public BaseRepository(BetForContext dbContext)
         {
-            _dbContext = dbContext; _dbSet = _dbContext.Set<T>();
+            this.dbContext = dbContext;
+            this.dbSet = dbContext.Set<T>();
         }
 
-        public void Add(T entity)
+        public async Task<bool> TryInsertItemAsync(T item)
         {
-            _dbSet.Add(entity);
-            _dbContext.SaveChanges();
+            await dbSet.AddAsync(item);
+            return await dbContext.SaveChangesAsync() > 0;
         }
-        public void Update(T entity)
-        {
-            _dbContext.Entry(entity).State = EntityState.Modified;
-            _dbContext.SaveChanges();
-        }
-        public void Delete(T entity)
-        {
-            _dbSet.Remove(entity);
-            _dbContext.SaveChanges();
-        }
-        public T GetById(long id)
-        {
-            var data = _dbSet.FirstOrDefault(x => x.Id == id);
 
-            if (data != null)
+        public async Task<bool> TryInsertListAsync(ICollection<T> itemList)
+        {
+            await dbSet.AddRangeAsync(itemList);
+            return await dbContext.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> TryUpdateItemAsync(T item)
+        {
+            dbContext.Entry<T>(item).State = EntityState.Detached;
+            dbContext.Set<T>().Update(item);
+            return await dbContext.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> TryUpdateListAsync(ICollection<T> itemList)
+        {
+            dbSet.UpdateRange(itemList);
+            return await dbContext.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> TryDeleteItemAsync(T item)
+        {
+            dbSet.Remove(item);
+            return await dbContext.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> TryDeleteListAsync(ICollection<T> itemList)
+        {
+            dbSet.RemoveRange(itemList);
+            return await dbContext.SaveChangesAsync() > 0;
+        }
+
+        public async Task<T> GetItemAsync(Expression<Func<T, bool>> predicate, params string[] includeProps)
+        {
+            IQueryable<T> query = dbSet;
+            if (includeProps != null && includeProps.Length > 0)
             {
-                return data;
+                foreach (var item in includeProps)
+                {
+                    query = query.Include(item);
+                }
+            }
+
+            var result = await query.FirstOrDefaultAsync(predicate);
+
+            if (result != null)
+            {
+                return result;
             }
 
             return null;
         }
-        public IEnumerable<T> GetAll()
+
+        public async Task<IQueryable<T>> GetFilteredItemsAsync(Expression<Func<T, bool>> predicate, params string[] includeProps)
         {
-            return _dbSet.ToList();
-        }
-        public IEnumerable<T> Find(Expression<Func<T, bool>> predicate)
-        {
-            return _dbSet.Where(predicate).ToList();
+            IQueryable<T> query = dbSet;
+            if (includeProps != null && includeProps.Length > 0)
+            {
+                foreach (var item in includeProps)
+                {
+                    query = query.Include(item);
+                }
+            }
+
+            return await Task.FromResult(query.Where(predicate));
         }
     }
 }

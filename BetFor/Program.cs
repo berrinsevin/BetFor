@@ -13,6 +13,8 @@ builder.Services.AddDbContext<BetForContext>(options =>
 
 builder.Services.AddScoped<ITourService, TourService>();
 builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
+
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 
 builder.Services.AddHostedService<NumberService>();
